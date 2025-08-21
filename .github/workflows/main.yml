@@ -1,39 +1,50 @@
-name: Deploy .NET 8 App to Azure
+name: Deploy .NET 8 App to Azure App Service
 
 on:
   push:
     branches:
-      - main   # or master
+      - main   # Change to your branch if different
 
 jobs:
   build-and-deploy:
     runs-on: windows-latest
 
     steps:
+      # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup .NET
+      # Setup .NET 8 SDK
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
+      # Restore dependencies
       - name: Restore dependencies
         run: dotnet restore
 
+      # Build
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      - name: Publish
-        run: dotnet publish -c Release -o ./publish_output
+      # Run Tests (optional)
+      - name: Run tests
+        run: dotnet test --no-build --verbosity normal
 
-      - name: Login to Azure
-        uses: azure/login@v1
+      # Publish
+      - name: Publish
+        run: dotnet publish -c Release -o ./publish
+
+      # Login to Azure
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # Deploy to Azure
       - name: Deploy to Azure WebApp
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: "GitHubDemo"   # Replace with your Azure App Service name
-          package: ./publish_output
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: ./publish
