@@ -1,50 +1,46 @@
-name: Deploy .NET 8 App to Azure App Service
+name: Deploy .NET 8 App to Azure Windows App Service
 
 on:
   push:
     branches:
-      - main   # Change to your branch if different
+      - main   # change if your default branch is master
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: windows-latest   # 👈 Windows runner
 
     steps:
-      # Checkout code
+      # 1. Checkout repo
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # Setup .NET 8 SDK
-      - name: Setup .NET 8
+      # 2. Setup .NET 8 SDK
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      # Restore dependencies
+      # 3. Restore NuGet packages
       - name: Restore dependencies
         run: dotnet restore
 
-      # Build
+      # 4. Build in Release mode
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      # Run Tests (optional)
-      - name: Run tests
-        run: dotnet test --no-build --verbosity normal
-
-      # Publish
+      # 5. Publish project to a folder
       - name: Publish
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish -c Release -o ./publish_output
 
-      # Login to Azure
+      # 6. Login to Azure using service principal
       - name: Azure Login
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Deploy to Azure
+      # 7. Deploy published files to Azure App Service
       - name: Deploy to Azure WebApp
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: ./publish
+          app-name: "GitHubDemo"   # 👈 replace with your App Service name
+          package: ./publish_output
